@@ -2530,6 +2530,7 @@ end
 -- XPerl_AuraButton_Update
 -- Hook for Blizzard aura button setup to add cooldowns if we have them enabled
 local function XPerl_AuraButton_Update(buttonName, index, filter)
+	if not conf then return end
 	if (conf.buffs.blizzardCooldowns and BuffFrame:IsShown()) then
 		local buffName = buttonName..index
 		local button = _G[buffName]
