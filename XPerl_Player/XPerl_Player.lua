@@ -28,6 +28,14 @@ local XPerl_Player_InitDK
 local XPerl_PlayerStatus_OnUpdate
 local XPerl_Player_HighlightCallback
 
+ALT_RESOURCE_BARS = {
+	["MANA"] = SPELL_POWER_MANA,
+	["RAGE"] = SPELL_POWER_RAGE,
+	["FOCUS"] = SPELL_POWER_FOCUS,
+	["ENERGY"] = SPELL_POWER_ENERGY,
+	["RUNIC_POWER"] = SPELL_POWER_RUNIC_POWER
+}
+
 ----------------------
 -- Loading Function --
 ----------------------
@@ -345,12 +353,19 @@ local function XPerl_Player_UpdatePVP(self)
 end
 
 -- XPerl_Player_DruidBarUpdate
-local function XPerl_Player_DruidBarUpdate(self)
-	local manaPct
-	local druidBar = self.statsFrame.druidBar
 
+local function XPerl_Player_DruidBarUpdate(self)
+	local druidBar = self.statsFrame.druidBar
 	local maxMana = UnitPowerMax("player", 0)
 	local currMana = UnitPower("player", 0)
+	local rType = 0
+	local barType = "mana"
+	if CLASS_ALTERNATE_POWERS ~= nil then
+		rType = ALT_RESOURCE_BARS[CLASS_ALTERNATE_POWERS[playerClass]] -- e.g. "ENERGY" -> 3
+		barType = string.lower(CLASS_ALTERNATE_POWERS[playerClass])
+		currMana = UnitPower("player", rType)
+		maxMana = UnitPowerMax("player", rType)
+	end
 
 	druidBar:SetMinMaxValues(0, maxMana or 1)
 	druidBar:SetValue(currMana or 0)
@@ -359,7 +374,7 @@ local function XPerl_Player_DruidBarUpdate(self)
 	druidBar.percent:SetFormattedText(percD, currMana * 100 / maxMana)
 
 	local druidBarExtra
-	if (UnitPowerType(self.partyid) > 0) then
+	if (UnitPowerType(self.partyid) > 0 or rType > 0) then
 		druidBar.text:Show()
 		if (pconf.percent) then
 			druidBar.percent:Show()
@@ -367,6 +382,13 @@ local function XPerl_Player_DruidBarUpdate(self)
 		druidBar:Show()
 		druidBar:SetHeight(10)
 		druidBarExtra = 1
+		if rType > 0 then
+			local c = conf.colour.bar[barType]
+			if (c) then
+				druidBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+				druidBar.bg:SetVertexColor(c.r, c.g, c.b, 0.25)
+			end
+		end
 	else
 		druidBar.percent:Hide()
 		druidBar.text:Hide()
@@ -409,7 +431,7 @@ local function XPerl_Player_UpdateMana(self)
 		end
 	end
 
-	if (playerClass == "DRUID" or playerClass == "HERO") then
+	if (playerClass == "DRUID" or playerClass == "HERO" or CLASS_ALTERNATE_POWERS[playerClass] ~= nil) then
 		XPerl_Player_DruidBarUpdate(self)
 	end
 end
@@ -602,7 +624,8 @@ function XPerl_Player_Events:PLAYER_ENTERING_WORLD()
 		end
 	end
 
-	local events = {"UNIT_RAGE", "UNIT_MAXRAGE", "UNIT_MAXENERGY", "UNIT_MAXMANA", "UNIT_MAXRUNIC_POWER",
+	local events = {"UNIT_RAGE", "UNIT_MAXRAGE", "UNIT_ENERGY", "UNIT_MAXENERGY", "UNIT_MAXMANA",
+			"UNIT_RUNIC_POWER", "UNIT_MAXRUNIC_POWER",
 			"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_LEVEL", "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE",
 			"UNIT_SPELLMISS", "UNIT_FACTION", "UNIT_PORTRAIT_UPDATE", "UNIT_FLAGS", "PLAYER_FLAGS_CHANGED",
 			"UNIT_SPELLCAST_SUCCEEDED", "UNIT_ENTERED_VEHICLE", "UNIT_EXITED_VEHICLE",
@@ -790,7 +813,7 @@ end
 -- PLAYER_TALENT_UPDATE
 function XPerl_Player_Events:PLAYER_TALENT_UPDATE()
 	XPerl_Player_UpdateMana(self)
-	if (playerClass == "DRUID" or playerClass == "HERO") then
+	if (playerClass == "DRUID" or playerClass == "HERO" or CLASS_ALTERNATE_POWERS[playerClass] ~= nil) then
 		XPerl_Player_DruidBarUpdate(self)
 	end
 end
@@ -1043,7 +1066,7 @@ function XPerl_Player_Set_Bits(self)
 		end
 	end
 
-	if ((playerClass == "DRUID" or playerClass == "HERO") and not self.statsFrame.druidBar) then
+	if ((playerClass == "DRUID" or playerClass == "HERO" or CLASS_ALTERNATE_POWERS[playerClass] ~= nil) and not self.statsFrame.druidBar) then
 		MakeDruidBar(self)
 	else
 		MakeDruidBar = nil
