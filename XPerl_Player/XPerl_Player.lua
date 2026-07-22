@@ -361,10 +361,12 @@ local function XPerl_Player_DruidBarUpdate(self)
 	local rType = 0
 	local barType = "mana"
 	if CLASS_ALTERNATE_POWERS ~= nil then
-		rType = ALT_RESOURCE_BARS[CLASS_ALTERNATE_POWERS[playerClass]] -- e.g. "ENERGY" -> 3
-		barType = string.lower(CLASS_ALTERNATE_POWERS[playerClass])
-		currMana = UnitPower("player", rType)
-		maxMana = UnitPowerMax("player", rType)
+		rType = ALT_RESOURCE_BARS[CLASS_ALTERNATE_POWERS[playerClass]] or 0
+		if rType ~= 0 then
+			barType = string.lower(CLASS_ALTERNATE_POWERS[playerClass])
+			currMana = UnitPower("player", rType)
+			maxMana = UnitPowerMax("player", rType)
+		end
 	end
 
 	druidBar:SetMinMaxValues(0, maxMana or 1)
